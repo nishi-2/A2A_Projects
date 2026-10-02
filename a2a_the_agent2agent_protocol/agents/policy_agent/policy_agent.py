@@ -1,15 +1,22 @@
 import base64
 import os
+import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
-from IPython.display import Markdown, display
+_agent_dir = Path(__file__).resolve().parent
+for _path in (_agent_dir, _agent_dir.parent):
+    _entry = str(_path)
+    if _entry not in sys.path:
+        sys.path.insert(0, _entry)
+
 from openai import OpenAI
 
-load_dotenv()
+from common.config import load_env
+
+load_env()
 
 if not os.environ.get("OPENAI_API_KEY"):
-    raise ValueError("OPENAI_API_KEY is not set. Add it to a .env file in this directory.")
+    raise ValueError("OPENAI_API_KEY is not set. Add it to the project .env file.")
 
 _global_client = OpenAI()
 
@@ -25,7 +32,8 @@ class PolicyAgent:
     def __init__(self, model: str = "gpt-4o-mini") -> None:
         self.client = _global_client
         self.model = model
-        with Path("2026AnthemgHIPSBC.pdf").open("rb") as file:
+        pdf_path = Path(__file__).resolve().parent / "2026AnthemgHIPSBC.pdf"
+        with pdf_path.open("rb") as file:
             self.pdf_data = base64.standard_b64encode(file.read()).decode("utf-8")
             self.pdf_filename = "2026AnthemgHIPSBC.pdf"
 

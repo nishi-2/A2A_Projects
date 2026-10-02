@@ -1,38 +1,34 @@
-"""  This will have the Health Research Agent which will use Google's Agent Development Kit (ADK) 
-and a tool to search the web for health information. """
+"""Health Research Agent — Google ADK + web search, exposed via A2A."""
 
-""" Instead of manually defining the Executor and RequestHandler as in Policy Agent, 
-we will use google.adk.a2a.utils.agent_to_a2a.to_a2a to automatically wrap the ADK agent into an A2A-compliant application. """
-
+import logging
 import os
+import sys
+import warnings
+from pathlib import Path
 
+_agent_dir = Path(__file__).resolve().parent
+for _path in (_agent_dir, _agent_dir.parent):
+    _entry = str(_path)
+    if _entry not in sys.path:
+        sys.path.insert(0, _entry)
+
+import google.auth
 import uvicorn
-from dotenv import load_dotenv
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
 from google.adk.tools import google_search
 
-import logging
-import warnings
+from common.config import load_env
+
+load_env()
 
 logging.disable(level=logging.WARNING)
-warnings.filterwarnings('ignore', category=UserWarning)
-warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-load_dotenv()
-
-from pathlib import Path
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-### Method to Authenticate with Google
-
-import google.auth
 
 def setup_gcp_env() -> tuple[google.auth.credentials.Credentials, str]:
     """Load GCP config from .env and authenticate via ADC (no JSON key)."""
-    load_dotenv(PROJECT_ROOT / ".env", override=True)
-
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
     location = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")
 
@@ -49,16 +45,10 @@ def setup_gcp_env() -> tuple[google.auth.credentials.Credentials, str]:
         scopes=["https://www.googleapis.com/auth/cloud-platform"]
     )
 
-    # Prefer .env project over ADC default if they differ
     return credentials, project_id or adc_project
 
 
-credentials, project_id = setup_gcp_env()
-
-### Authentication process ends
-
-# Authenticate
-credentials, project_id = setup_gcp_env()
+setup_gcp_env()
 
 PORT = int(os.environ.get("RESEARCH_AGENT_PORT", "9998"))
 HOST = os.environ.get("AGENT_HOST", "localhost")
@@ -78,13 +68,10 @@ research_agent = LlmAgent(
 
 
 def main() -> None:
-    # Make your agent A2A-compatible
     a2a_app = to_a2a(research_agent, host=HOST, port=PORT)
     print("Running Health Research Agent")
     uvicorn.run(a2a_app, host=HOST, port=PORT)
 
-    
+
 if __name__ == "__main__":
     main()
-
-

@@ -1,9 +1,14 @@
-# Creating the A2A Server for the Policy Agent
-
-from dotenv import load_dotenv
 import os
-import uvicorn
+import sys
+from pathlib import Path
 
+_agent_dir = Path(__file__).resolve().parent
+for _path in (_agent_dir, _agent_dir.parent):
+    _entry = str(_path)
+    if _entry not in sys.path:
+        sys.path.insert(0, _entry)
+
+import uvicorn
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.events import EventQueue
@@ -12,14 +17,18 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from a2a.utils import new_agent_text_message
 
-from policy_agent import PolicyAgent   # Importing the PolicyAgent we developed
+from common.config import load_env
+
+load_env()
+
+from policy_agent import PolicyAgent
 
 
 class PolicyAgentExecutor(AgentExecutor):
     def __init__(self) -> None:
         self.agent = PolicyAgent()
 
-    async def execute(self, context: RequestContext, event_queue: EventQueue,) -> None:
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         prompt = context.get_user_input()
         response = self.agent.answer_query(prompt)
         message = new_agent_text_message(response)
@@ -31,7 +40,7 @@ class PolicyAgentExecutor(AgentExecutor):
 
 def main() -> None:
     print("Running A2A Health Insurance Policy Agent (OpenAI GPT)")
-    _ = load_dotenv()
+
     port = int(os.environ.get("POLICY_AGENT_PORT", 9999))
     host = os.environ.get("AGENT_HOST", "localhost")
 

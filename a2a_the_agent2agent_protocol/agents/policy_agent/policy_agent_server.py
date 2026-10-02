@@ -12,7 +12,7 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from a2a.utils import new_agent_text_message
 
-from agents.policy_agent import PolicyAgent   # Importing the PolicyAgent we developed
+from policy_agent import PolicyAgent   # Importing the PolicyAgent we developed
 
 
 class PolicyAgentExecutor(AgentExecutor):
